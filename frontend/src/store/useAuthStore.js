@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+// ✅ Dynamic API URL fallback config for development and deployment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const useAuthStore = create((set) => ({
   user: null,
   isCheckingAuth: true,
@@ -8,7 +11,7 @@ export const useAuthStore = create((set) => ({
   // 🔄 1. Automatically check if user is logged in on page refresh
   checkAuth: async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/me', { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         set({ user: data, isCheckingAuth: false });
@@ -25,7 +28,7 @@ export const useAuthStore = create((set) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -46,7 +49,7 @@ export const useAuthStore = create((set) => ({
   signup: async (name, email, password) => {
     set({ isLoading: true });
     try {
-      const res = await fetch('http://localhost:5000/api/auth/signup', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
@@ -66,7 +69,7 @@ export const useAuthStore = create((set) => ({
   // 🚪 4. Logout Action
   logout: async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', { method: 'POST', credentials: 'include' });
+      await fetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
       set({ user: null });
     } catch (error) {
       console.error("Logout error:", error);
