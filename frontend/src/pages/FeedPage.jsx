@@ -11,7 +11,8 @@ export default function FeedPage() {
   const [isPosting, setIsPosting] = useState(false); 
   const fileInputRef = useRef(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // ✅ Bulletproof dynamic URL: Localhost for dev, relative/env URL for production
+  const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : (import.meta.env.VITE_API_URL || "");
   const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   const fetchPosts = async () => {

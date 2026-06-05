@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-// ✅ Dynamic API URL fallback config for development and deployment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// ✅ Bulletproof dynamic URL: Localhost for dev, relative/env URL for production
+const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : (import.meta.env.VITE_API_URL || "");
 
 export const usePostStore = create((set) => ({
   posts: [],

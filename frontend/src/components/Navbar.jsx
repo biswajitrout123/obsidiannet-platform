@@ -88,7 +88,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link to="/login" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Login</Link>
-                <Link ask to="/signup" onClick={closeMenu} className="text-blue-500 font-semibold text-base">Sign Up</Link>
+                <Link to="/signup" onClick={closeMenu} className="text-blue-500 font-semibold text-base">Sign Up</Link>
               </>
             )}
           </div>
