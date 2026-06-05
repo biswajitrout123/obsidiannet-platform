@@ -1,0 +1,75 @@
+import { create } from 'zustand';
+
+export const useAuthStore = create((set) => ({
+  user: null,
+  isCheckingAuth: true,
+  isLoading: false,
+
+  // 🔄 1. Automatically check if user is logged in on page refresh
+  checkAuth: async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        set({ user: data, isCheckingAuth: false });
+      } else {
+        set({ user: null, isCheckingAuth: false });
+      }
+    } catch (error) {
+      console.error("Auth verification error:", error);
+      set({ user: null, isCheckingAuth: false });
+    }
+  },
+
+  // 🔐 2. Login Action
+  login: async (email, password) => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+      
+      set({ user: data.user || data, isLoading: false });
+      return { success: true };
+    } catch (error) {
+      set({ isLoading: false });
+      return { success: false, message: error.message };
+    }
+  },
+
+  // 📝 3. Signup Action
+  signup: async (name, email, password) => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Signup failed');
+
+      set({ user: data.user || data, isLoading: false });
+      return { success: true };
+    } catch (error) {
+      set({ isLoading: false });
+      return { success: false, message: error.message };
+    }
+  },
+
+  // 🚪 4. Logout Action
+  logout: async () => {
+    try {
+      await fetch('http://localhost:5000/api/auth/logout', { method: 'POST', credentials: 'include' });
+      set({ user: null });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  }
+}));
