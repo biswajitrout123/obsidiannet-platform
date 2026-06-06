@@ -16,8 +16,8 @@ export default function ProfilePage() {
   const [skills, setSkills] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ✅ Bulletproof dynamic URL: Localhost for dev, relative/env URL for production
-  const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : (import.meta.env.VITE_API_URL || "");
+  // ✅ Bulletproof dynamic URL: Uses Vercel variable in production, Localhost in dev
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
   const DEFAULT_BANNER = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop";
 
@@ -93,7 +93,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Action Button Toggle */}
           <div className="flex justify-end pt-3 sm:pt-4">
             {isOwnProfile ? (
               <button 
@@ -215,7 +214,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

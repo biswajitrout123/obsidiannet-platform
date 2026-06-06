@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-// ✅ Bulletproof dynamic URL: Localhost for dev, relative/env URL for production
-const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : (import.meta.env.VITE_API_URL || "");
+// ✅ Bulletproof dynamic URL: Uses Vercel variable in production, Localhost in dev
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const usePostStore = create((set) => ({
   posts: [],
@@ -10,11 +10,11 @@ export const usePostStore = create((set) => ({
   fetchPosts: async () => {
     set({ isLoading: true });
     try {
-      // Calls your new GET /api/posts route using the dynamic URL
       const res = await fetch(`${API_BASE_URL}/api/posts`, { credentials: 'include' });
       const data = await res.json();
       set({ posts: data, isLoading: false });
     } catch (error) {
+      console.error("Error fetching posts:", error);
       set({ isLoading: false });
     }
   },
