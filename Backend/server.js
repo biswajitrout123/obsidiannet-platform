@@ -11,19 +11,32 @@ import postRoutes from './routes/post.route.js';
 import userRoutes from './routes/user.routes.js';
 import jobRoutes from './routes/job.routes.js';
 
-
 // Environment Configuration
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Global Middleware
+// ✅ FIXED: Multi-environment CORS matching to securely pass cookies from Vercel to Render
+const allowedOrigins = [
+    'http://localhost:5173',                    // Local development frontend
+    'https://obsidiannet-platform.vercel.app',  // Your production Vercel deployment URL
+    process.env.CLIENT_URL                      // Fallback value from dashboard configuration
+];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like Postman or server-to-server) or if it's in our allowed list
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -42,7 +55,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
-app.use('/api/users', userRoutes); // ✅ FIXED: Mounted the user routing framework here!
+app.use('/api/users', userRoutes); 
 app.use('/api/jobs', jobRoutes);
 
 // Database Connection & Server Startup

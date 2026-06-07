@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore'; // ✅ Connected to your Auth Store
 
 export default function FeedPage() {
+  const { user } = useAuthStore(); // ✅ Get the logged-in user profile dynamically
   const [posts, setPosts] = useState([]);
   const [postContent, setPostContent] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -11,7 +13,7 @@ export default function FeedPage() {
   const [isPosting, setIsPosting] = useState(false); 
   const fileInputRef = useRef(null);
 
-  // ✅ Bulletproof dynamic URL: Uses Vercel variable in production, Localhost in dev
+  // ✅ Bulletproof dynamic URL setup
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
@@ -73,15 +75,17 @@ export default function FeedPage() {
   };
 
   const handleLike = async (postId) => {
+    if (!user) return; // Guard clause if auth state isn't ready
+    const currentUserId = user._id || user.id; // ✅ Uses real logged-in user database ID
+
     try {
       setPosts((prevPosts) =>
         prevPosts.map((post) => {
           if (post._id !== postId) return post;
-          const dummyUserId = "current_user"; 
-          const hasLiked = post.likes?.includes(dummyUserId);
+          const hasLiked = post.likes?.includes(currentUserId);
           const updatedLikes = hasLiked
-            ? post.likes.filter((id) => id !== dummyUserId)
-            : [...(post.likes || []), dummyUserId];
+            ? post.likes.filter((id) => id !== currentUserId)
+            : [...(post.likes || []), currentUserId];
 
           return { ...post, likes: updatedLikes };
         })
@@ -130,7 +134,12 @@ export default function FeedPage() {
       {/* ✍️ Post Creation Box */}
       <div className="bg-[#11131e] border border-[#1e2230] rounded-xl p-3 sm:p-4 shadow-lg mb-4 sm:mb-6">
         <div className="flex space-x-2 sm:space-x-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex-shrink-0 shadow-inner"></div>
+          {/* ✅ Displays logged-in user's live profile picture */}
+          <img 
+            src={user?.profilePicture || PLACEHOLDER_AVATAR} 
+            alt="Current User" 
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border border-[#1e2230] bg-gray-900 shadow-inner flex-shrink-0"
+          />
           
           <form onSubmit={handlePostSubmit} className="flex-1">
             <textarea
