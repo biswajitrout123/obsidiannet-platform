@@ -17,16 +17,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
+// Global Middleware
 const allowedOrigins = [
-    'http://localhost:5173',                    
-    'https://obsidiannet-platform.vercel.app',  
-    process.env.CLIENT_URL                      
+    'http://localhost:5173',                    // Local development frontend
+    'https://obsidiannet-platform.vercel.app',  // Your production Vercel deployment URL
+    process.env.CLIENT_URL                      // Fallback value from dashboard configuration
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
-        
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -37,11 +36,12 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ✅ FIXED: Increased payload size limits to allow high-resolution image uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
-
+// 🖼️ Static Media Folder serving path middleware
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Base Health Check Route
