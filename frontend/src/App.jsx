@@ -46,7 +46,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={user ? <FeedPage /> : <Navigate to="/login" replace />} />
             <Route path="/network" element={user ? <NetworkPage /> : <Navigate to="/login" replace />} />
-            <Route path="/profile/:username" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
+            <Route path="/profile/:username" element={<ProfilePage />} />
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
             <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" replace />} />
             <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />

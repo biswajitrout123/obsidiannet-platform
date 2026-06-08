@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore'; 
 
@@ -10,13 +10,23 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Form Field States
   const [headline, setHeadline] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
   const [skills, setSkills] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ✅ Bulletproof dynamic URL: Uses Vercel variable in production, Localhost in dev
+  // ☁️ File Upload States for Cloudinary
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [bannerPreview, setBannerPreview] = useState('');
+
+  const avatarInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
+
+  // ✅ Dynamic deployment base URL
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
   const DEFAULT_BANNER = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop";
@@ -31,10 +41,13 @@ export default function ProfilePage() {
         const data = await response.json();
         setProfileData(data);
         
+        // Sync database values to edit form states
         setHeadline(data.headline || '');
         setBio(data.bio || '');
         setLocation(data.location || '');
         setSkills(data.skills ? data.skills.join(', ') : '');
+        setAvatarPreview(data.profilePicture || PLACEHOLDER_AVATAR);
+        setBannerPreview(data.coverBanner || DEFAULT_BANNER);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -47,21 +60,46 @@ export default function ProfilePage() {
     fetchProfile();
   }, [username]);
 
+  // Handle local image file selection picks
+  const handleFileChange = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (type === 'avatar') {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    } else if (type === 'banner') {
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
 
+    // 🚀 Using FormData instead of JSON so images can upload to Cloudinary natively
+    const formData = new FormData();
+    formData.append('headline', headline);
+    formData.append('bio', bio);
+    formData.append('location', location);
+    formData.append('skills', skills); // Handled safely as comma-separated or parsed string list
+
+    if (avatarFile) formData.append('profilePicture', avatarFile);
+    if (bannerFile) formData.append('coverBanner', bannerFile);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/users/update`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ headline, bio, location, skills }),
-        credentials: 'include',
+        body: formData,
+        credentials: 'include', // Important for cookies session verification
       });
 
       if (response.ok) {
         setIsModalOpen(false);
-        fetchProfile(); 
+        setAvatarFile(null);
+        setBannerFile(null);
+        fetchProfile(); // Refresh timeline component updates
       }
     } catch (error) {
       console.error("Error updating profile details:", error);
@@ -146,11 +184,33 @@ export default function ProfilePage() {
 
       {/* 🪟 Interactive Modal Pop-Up Box Component */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#11131e] border border-[#1e2230] w-full max-w-lg rounded-xl p-5 sm:p-6 shadow-2xl relative text-left max-h-[90vh] overflow-y-auto">
-            <h3 className="text-sm sm:text-base font-bold text-gray-200 border-b border-[#1e2230] pb-2 sm:pb-3 mb-3 sm:mb-4">Update Profile Framework Details</h3>
+            <h3 className="text-sm sm:text-base font-bold text-gray-200 border-b border-[#1e2230] pb-2 sm:pb-3 mb-3 sm:mb-4">Update Profile Details</h3>
             
             <form onSubmit={handleUpdateSubmit} className="space-y-3 sm:space-y-4">
+              
+              {/* 🖼️ Avatar & Banner Cloud Image Configs */}
+              <div className="grid grid-cols-2 gap-4 bg-[#090a0f] p-3 rounded-lg border border-[#1e2230]/60">
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Profile Photo</label>
+                  <div className="flex items-center space-x-2">
+                    <img src={avatarPreview} className="w-10 h-10 rounded-full object-cover border border-[#1e2230]" alt="" />
+                    <input type="file" ref={avatarInputRef} onChange={(e) => handleFileChange(e, 'avatar')} className="hidden" accept="image/*" />
+                    <button type="button" onClick={() => avatarInputRef.current.click()} className="px-2 py-1 bg-[#1e2230] text-[10px] text-gray-300 rounded hover:bg-[#252a3d]">Change</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold uppercase mb-1">Cover Banner</label>
+                  <div className="flex items-center space-x-2">
+                    <img src={bannerPreview} className="w-14 h-8 rounded object-cover border border-[#1e2230]" alt="" />
+                    <input type="file" ref={bannerInputRef} onChange={(e) => handleFileChange(e, 'banner')} className="hidden" accept="image/*" />
+                    <button type="button" onClick={() => bannerInputRef.current.click()} className="px-2 py-1 bg-[#1e2230] text-[10px] text-gray-300 rounded hover:bg-[#252a3d]">Change</button>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] sm:text-xs text-gray-400 font-semibold mb-1">Professional Headline</label>
                 <input 
@@ -197,7 +257,7 @@ export default function ProfilePage() {
               <div className="flex justify-end space-x-2 sm:space-x-3 pt-3 border-t border-[#1e2230]/60 mt-3 sm:mt-4">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); fetchProfile(); }}
                   className="px-3 sm:px-4 py-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 text-[11px] sm:text-xs font-semibold rounded-full transition-colors"
                 >
                   Cancel
