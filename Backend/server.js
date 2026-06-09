@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-// ✅ FIXED: Load environment variables BEFORE importing routes
 dotenv.config();
 
 import express from 'express';
