@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore'; 
+import axios from 'axios';
 
 export default function FeedPage() {
   const { user } = useAuthStore(); 
@@ -128,7 +129,7 @@ export default function FeedPage() {
     setCommentInputs(prev => ({ ...prev, [postId]: value }));
   };
 
-  // 🗑️ CORRECTED: Handle Post Deletion using 'fetch'
+  // 🗑️ Handle Post Deletion using native fetch
   const handleDeletePost = async (postId) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this post?");
     if (!confirmDelete) return;
@@ -140,10 +141,10 @@ export default function FeedPage() {
       });
 
       if (response.ok) {
-        // Instantly remove the post from the UI without refreshing the page
+        // Instantly remove the post from the UI layout dynamically
         setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
       } else {
-        console.error("Failed to delete post");
+        console.error("Failed to delete post from backend context");
       }
     } catch (error) {
       console.error("Error deleting post:", error);
@@ -214,8 +215,10 @@ export default function FeedPage() {
       {/* 📜 Feed Timeline */}
       <div className="space-y-4">
         {posts.map((post) => {
-          // 🔒 Security Check Helper for UI rendering
-          const isMyPost = user && post.user && (user._id === post.user._id || user.id === post.user._id);
+          // 🔒 Secure structural checking for post ownership parsing string IDs or Object parameters safely
+          const postOwnerId = post.user?._id || post.user;
+          const currentUserId = user?._id || user?.id;
+          const isMyPost = currentUserId && postOwnerId && currentUserId.toString() === postOwnerId.toString();
 
           return (
             <div key={post._id} className="bg-[#11131e] border border-[#1e2230] rounded-xl p-4 sm:p-5 shadow-md text-left transition-all hover:border-[#252a3d]">

@@ -39,15 +39,19 @@ export default function ProfilePage() {
       
       if (response.ok) {
         const data = await response.json();
-        setProfileData(data);
         
-        // Sync database values to edit form states
-        setHeadline(data.headline || '');
-        setBio(data.bio || '');
-        setLocation(data.location || '');
-        setSkills(data.skills ? data.skills.join(', ') : '');
-        setAvatarPreview(data.profilePicture || PLACEHOLDER_AVATAR);
-        setBannerPreview(data.coverBanner || DEFAULT_BANNER);
+        // ✅ FIXED: Safely unpack the user object from the response
+        const userData = data.user ? data.user : data; 
+
+        setProfileData(userData);
+        
+        // Sync database values to edit form states using the unpacked data
+        setHeadline(userData.headline || '');
+        setBio(userData.bio || '');
+        setLocation(userData.location || '');
+        setSkills(userData.skills ? userData.skills.join(', ') : '');
+        setAvatarPreview(userData.profilePicture || PLACEHOLDER_AVATAR);
+        setBannerPreview(userData.coverBanner || DEFAULT_BANNER);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -111,7 +115,8 @@ export default function ProfilePage() {
   if (isLoading) return <div className="text-white text-center mt-20 text-sm">Loading profile timeline...</div>;
   if (!profileData) return <div className="text-white text-center mt-20 text-sm">User structure not found.</div>;
 
-  const isOwnProfile = currentUser?.username === profileData.username;
+  // Check against username or _id securely
+  const isOwnProfile = currentUser?.username === profileData.username || currentUser?._id === profileData._id;
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-2 sm:mt-4 px-3 sm:px-4 pb-12">

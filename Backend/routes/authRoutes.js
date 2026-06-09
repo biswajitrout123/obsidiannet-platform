@@ -8,7 +8,7 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
 
-// 🔍 NEW: The route the frontend uses to verify if you are logged in
+// NEW: The route the frontend uses to verify if you are logged in
 router.get('/me', protectRoute, getCurrentUser);
 
 export default router;
