@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore'; 
-import axios from 'axios';
 
 export default function FeedPage() {
   const { user } = useAuthStore(); 
@@ -13,6 +12,13 @@ export default function FeedPage() {
   const [commentInputs, setCommentInputs] = useState({}); 
   const [isPosting, setIsPosting] = useState(false); 
   const fileInputRef = useRef(null);
+
+  // 🔍 NEW: Search State Variables
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchRef = useRef(null);
   
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
@@ -31,6 +37,43 @@ export default function FeedPage() {
 
   useEffect(() => {
     fetchPosts();
+  }, []);
+
+  // 🔍 NEW: Debounced Live Search Engine
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        setIsSearching(true);
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/users/search?query=${searchQuery}`, { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            setSearchResults(data);
+            setShowSearchDropdown(true);
+          }
+        } catch (error) {
+          console.error("Search error:", error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowSearchDropdown(false);
+      }
+    }, 300); // 300ms delay so it doesn't spam your database on every keystroke
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  // Close search dropdown if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleImageChange = (e) => {
@@ -129,7 +172,6 @@ export default function FeedPage() {
     setCommentInputs(prev => ({ ...prev, [postId]: value }));
   };
 
-  // 🗑️ Handle Post Deletion using native fetch
   const handleDeletePost = async (postId) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this post?");
     if (!confirmDelete) return;
@@ -141,7 +183,6 @@ export default function FeedPage() {
       });
 
       if (response.ok) {
-        // Instantly remove the post from the UI layout dynamically
         setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
       } else {
         console.error("Failed to delete post from backend context");
@@ -154,6 +195,47 @@ export default function FeedPage() {
   return (
     <div className="w-full max-w-2xl mx-auto mt-2 sm:mt-4 px-2 sm:px-4 pb-12">
       
+      {/* 🔍 Universal Search Bar UI */}
+      <div className="relative mb-4 sm:mb-6 z-40" ref={searchRef}>
+        <div className="relative flex items-center">
+          <span className="absolute left-3 text-gray-500">🔍</span>
+          <input 
+            type="text" 
+            placeholder="Search ObsidianNet for people..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => { if (searchResults.length > 0) setShowSearchDropdown(true); }}
+            className="w-full bg-[#11131e] text-gray-200 placeholder-gray-500 border border-[#1e2230] rounded-full pl-9 pr-4 py-2 sm:py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-xs sm:text-sm shadow-md"
+          />
+        </div>
+
+        {/* 🔻 Search Results Dropdown */}
+        {showSearchDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-[#11131e] border border-[#1e2230] rounded-xl shadow-2xl overflow-hidden max-h-80 overflow-y-auto">
+            {isSearching ? (
+              <div className="p-4 text-center text-xs text-gray-400">Searching directory...</div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map(result => (
+                <Link 
+                  key={result._id} 
+                  to={`/profile/${result.username}`}
+                  onClick={() => { setShowSearchDropdown(false); setSearchQuery(''); }}
+                  className="flex items-center space-x-3 p-3 hover:bg-[#1a1e2d] transition-colors border-b border-[#1e2230]/50 last:border-0"
+                >
+                  <img src={result.profilePicture || PLACEHOLDER_AVATAR} alt="" className="w-8 h-8 rounded-full object-cover bg-gray-900 border border-[#252a3d]" />
+                  <div>
+                    <h4 className="text-gray-200 font-semibold text-xs sm:text-sm tracking-wide">{result.name}</h4>
+                    <p className="text-[10px] text-gray-500 truncate max-w-[200px] sm:max-w-xs">{result.headline || "Professional Member"}</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="p-4 text-center text-xs text-gray-400">No matching professionals found.</div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ✍️ Post Creation Box */}
       <div className="bg-[#11131e] border border-[#1e2230] rounded-xl p-3 sm:p-4 shadow-lg mb-4 sm:mb-6">
         <div className="flex space-x-2 sm:space-x-4">
@@ -215,7 +297,6 @@ export default function FeedPage() {
       {/* 📜 Feed Timeline */}
       <div className="space-y-4">
         {posts.map((post) => {
-          // 🔒 Secure structural checking for post ownership parsing string IDs or Object parameters safely
           const postOwnerId = post.user?._id || post.user;
           const currentUserId = user?._id || user?.id;
           const isMyPost = currentUserId && postOwnerId && currentUserId.toString() === postOwnerId.toString();
@@ -243,7 +324,6 @@ export default function FeedPage() {
                   </div>
                 </Link>
 
-                {/* 🗑️ Delete Button */}
                 {isMyPost && (
                   <button 
                     onClick={() => handleDeletePost(post._id)}

@@ -5,21 +5,23 @@ import {
     getSuggestedUsers, 
     getUserProfile, 
     updateProfile, 
-    toggleConnection 
+    toggleConnection,
+    searchUsers,
+    getUserConnections
 } from '../controllers/user.controller.js';
 
 const router = express.Router();
 
-//  Use memory storage so Render/Vercel ephemeral instances do not crash
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-//  Clean Route Definitions
+// 🛣️ Clean Route Definitions
 router.get('/suggestions', protectRoute, getSuggestedUsers);
+router.get('/connections', protectRoute, getUserConnections); // 👥 New endpoint
+router.get('/search', protectRoute, searchUsers); // 🔍 New endpoint
 router.get('/profile/:username', protectRoute, getUserProfile);
 router.post('/connect/:id', protectRoute, toggleConnection);
 
-// Handle multi-field image streams securely
 router.put(
     '/update', 
     protectRoute, 
