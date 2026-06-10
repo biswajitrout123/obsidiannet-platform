@@ -22,8 +22,9 @@ router.get('/search', protectRoute, searchUsers); // 🔍 New endpoint
 router.get('/profile/:username', protectRoute, getUserProfile);
 router.post('/connect/:id', protectRoute, toggleConnection);
 
+// 🚀 FIX: Added '/profile' to match the frontend fetch request
 router.put(
-    '/update', 
+    '/profile/update', 
     protectRoute, 
     upload.fields([
         { name: 'profilePicture', maxCount: 1 }, 
