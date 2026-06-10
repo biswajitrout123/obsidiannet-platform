@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import AnalyticsChart from '../components/AnalyticsChart';
 
 export default function NetworkPage() {
   const { user: currentUser } = useAuthStore();
@@ -125,6 +126,7 @@ export default function NetworkPage() {
           </div>
         )}
       </div>
+      <AnalyticsChart />
 
       {/* 🌟 Section 2: People You May Know */}
       <div>

@@ -12,6 +12,7 @@ import authRoutes from './routes/authRoutes.js';
 import postRoutes from './routes/post.route.js'; 
 import userRoutes from './routes/user.routes.js';
 import jobRoutes from './routes/job.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,6 +58,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/jobs', jobRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Database Connection & Server Startup
 const MONGO_URI = process.env.MONGO_URI;
