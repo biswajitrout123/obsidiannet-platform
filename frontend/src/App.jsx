@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import NetworkPage from './pages/NetworkPage';
 import Navbar from './components/Navbar'; 
 import JobsPage from './pages/JobsPage';
+import RecruiterDashboard from './pages/RecruiterDashboard';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" replace />} />
             <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
           </Routes>
         </main>
 

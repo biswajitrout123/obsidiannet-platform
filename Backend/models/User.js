@@ -6,11 +6,13 @@ const userSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    headline: { type: String, default: 'ObsidianNet Professional Member' }, // 🛠️ FIX: Added missing field
-    location: { type: String, default: '' }, // 🛠️ FIX: Added missing field
+    role: { type: String, enum: ['user', 'recruiter'], default: 'user' }, // 🚨 FIX: Added role for access control
+    headline: { type: String, default: 'ObsidianNet Professional Member' }, 
+    location: { type: String, default: '' }, 
     bio: { type: String, default: 'Tech Professional | ObsidianNet Member' },
     profilePicture: { type: String, default: '' },
-    coverBanner: { type: String, default: '' }, // 🛠️ FIX: Changed from bannerImg to coverBanner to match frontend/controller
+    coverBanner: { type: String, default: '' },
+    resumeUrl: { type: String, default: '' }, // 🚨 FIX: Global resume storage
     skills: { type: [String], default: [] },
     connections: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
   },

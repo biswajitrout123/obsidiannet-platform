@@ -18,7 +18,8 @@ const generateTokenAndSetCookie = (userId, res) => {
 
 export const signup = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        // 🎯 Catch incoming role configuration from frontend payload
+        const { name, email, password, role } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'All fields are required.' });
@@ -35,11 +36,15 @@ export const signup = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Enforce safety constraint: Ensure role falls back cleanly to 'user' if manipulated
+        const assignedRole = role === 'recruiter' ? 'recruiter' : 'user';
+
         const newUser = await User.create({
             name,
             username: generatedUsername,
             email: email.toLowerCase(),
             password: hashedPassword,
+            role: assignedRole, // 🎯 Automatically saving the verified account type context
         });
 
         if (newUser) {
@@ -51,6 +56,7 @@ export const signup = async (req, res) => {
                 email: newUser.email,
                 bio: newUser.bio,
                 profilePicture: newUser.profilePicture,
+                role: newUser.role, // 🎯 Return role parameter to update application runtime state
             });
         } else {
             res.status(400).json({ message: 'Invalid user data provided.' });
@@ -89,6 +95,7 @@ export const login = async (req, res) => {
             email: user.email,
             bio: user.bio,
             profilePicture: user.profilePicture,
+            role: user.role, // 🎯 Ensure existing logins cleanly broadcast role info for navbar evaluation
         });
     } catch (error) {
         console.error('Login Error:', error.message);

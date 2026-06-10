@@ -6,18 +6,20 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user'); // 🎯 Added state for role selection ('user' or 'recruiter')
   const [error, setError] = useState('');
   const { signup, isLoading } = useAuthStore();
-  const navigate = useNavigate(); // 🚀 Hook to handle automatic redirection
+  const navigate = useNavigate(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    const result = await signup(name, email, password);
+    // 🚀 Passed the role selection parameter into your store's signup handler
+    const result = await signup(name, email, password, role);
     
     if (result.success) {
-      navigate('/'); // 🌟 Instantly takes you inside to the feed page upon registration!
+      navigate('/'); 
     } else {
       setError(result.message || 'Failed to complete authentication setup.');
     }
@@ -39,6 +41,36 @@ export default function SignupPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
+          
+          {/* 💼 ACCOUNT TYPE SELECTOR CARDS */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Account Type</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setRole('user')}
+                className={`p-3 rounded-xl border text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  role === 'user'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                    : 'border-[#1e2230] bg-[#090a0f] text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                🧑‍💻 Job Seeker
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('recruiter')}
+                className={`p-3 rounded-xl border text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  role === 'recruiter'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                    : 'border-[#1e2230] bg-[#090a0f] text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                💼 Recruiter
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Full Name</label>
             <input
@@ -54,7 +86,7 @@ export default function SignupPage() {
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
             <input
-              type="email"
+              type="type"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -79,7 +111,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors shadow-md tracking-wide"
+            className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg text-sm transition-colors shadow-md tracking-wide cursor-pointer"
           >
             {isLoading ? 'Creating Account...' : 'Agree & Join'}
           </button>
@@ -94,6 +126,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-
-

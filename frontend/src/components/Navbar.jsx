@@ -36,6 +36,17 @@ export default function Navbar() {
                 <Link to="/" className="hover:text-gray-200 transition-colors py-1">Home</Link>
                 <Link to="/network" className="hover:text-gray-200 transition-colors py-1">My Network</Link>
                 <Link to="/jobs" className="hover:text-gray-200 transition-colors py-1">Jobs</Link>
+                
+                {/* 💼 Conditionally render Recruiter Portal link for desktop */}
+                {user?.role === 'recruiter' && (
+                  <Link 
+                    to="/recruiter/dashboard" 
+                    className="text-blue-400 hover:text-blue-300 font-semibold transition-colors py-1 border-b-2 border-transparent hover:border-blue-400"
+                  >
+                    Recruiter Portal
+                  </Link>
+                )}
+
                 <Link 
                   to={`/profile/${user.username}`} 
                   className="hover:text-gray-200 transition-colors py-1 font-semibold text-gray-300 border-b-2 border-transparent hover:border-blue-500"
@@ -78,8 +89,20 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link to="/" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Home</Link>
-                <Link to="/network" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">My Network</Link>
+                <Link Nitro to="/network" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">My Network</Link>
                 <Link to="/jobs" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Jobs</Link>
+                
+                {/* 💼 Conditionally render Recruiter Portal link for mobile menu */}
+                {user?.role === 'recruiter' && (
+                  <Link 
+                    to="/recruiter/dashboard" 
+                    onClick={closeMenu} 
+                    className="text-blue-400 hover:text-blue-300 text-base font-semibold"
+                  >
+                    Recruiter Portal
+                  </Link>
+                )}
+
                 <Link to={`/profile/${user.username}`} onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Profile</Link>
                 <div className="pt-2 border-t border-[#1e2230]">
                   <button onClick={() => setIsLogoutModalOpen(true)} className="w-full text-left text-red-400 font-semibold py-2">Logout</button>
