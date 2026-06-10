@@ -1,27 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore'; 
+import { useAuthStore } from '../store/useAuthStore';
+
+//  Moved outside the component to prevent re-creation on every render
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
 export default function FeedPage() {
-  const { user } = useAuthStore(); 
+  const { user } = useAuthStore();
   const [posts, setPosts] = useState([]);
   const [postContent, setPostContent] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null); 
+  const [imagePreview, setImagePreview] = useState(null);
   const [activeCommentBox, setActiveCommentBox] = useState(null);
-  const [commentInputs, setCommentInputs] = useState({}); 
-  const [isPosting, setIsPosting] = useState(false); 
+  const [commentInputs, setCommentInputs] = useState({});
+  const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef(null);
 
-  // 🔍 NEW: Search State Variables
+  // 🔍 Search State Variables
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchRef = useRef(null);
-  
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  const PLACEHOLDER_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   const fetchPosts = async () => {
     try {
@@ -39,7 +40,7 @@ export default function FeedPage() {
     fetchPosts();
   }, []);
 
-  // 🔍 NEW: Debounced Live Search Engine
+  // 🔍 Debounced Live Search Engine
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {
@@ -50,6 +51,9 @@ export default function FeedPage() {
             const data = await response.json();
             setSearchResults(data);
             setShowSearchDropdown(true);
+          } else {
+            setSearchResults([]);
+            setShowSearchDropdown(false);
           }
         } catch (error) {
           console.error("Search error:", error);
@@ -57,7 +61,7 @@ export default function FeedPage() {
           setIsSearching(false);
         }
       } else {
-        setSearchResults([]);
+        setSearchResults([]); //  TYPO FIXED HERE
         setShowSearchDropdown(false);
       }
     }, 300); // 300ms delay so it doesn't spam your database on every keystroke
@@ -80,7 +84,7 @@ export default function FeedPage() {
     const file = e.target.files[0];
     if (file) {
       setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file)); 
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
@@ -95,7 +99,7 @@ export default function FeedPage() {
 
     setIsPosting(true);
     const formData = new FormData();
-    
+
     formData.append('text', postContent);
     if (selectedImage) formData.append('img', selectedImage);
 
@@ -109,7 +113,7 @@ export default function FeedPage() {
       if (response.ok) {
         setPostContent('');
         handleRemoveImage();
-        await fetchPosts(); 
+        await fetchPosts();
       }
     } catch (error) {
       console.error("Error posting content:", error);
@@ -119,8 +123,8 @@ export default function FeedPage() {
   };
 
   const handleLike = async (postId) => {
-    if (!user) return; 
-    const currentUserId = user._id || user.id; 
+    if (!user) return;
+    const currentUserId = user._id || user.id;
 
     try {
       setPosts((prevPosts) =>
@@ -139,8 +143,8 @@ export default function FeedPage() {
         method: 'POST',
         credentials: 'include',
       });
-      
-      if (!response.ok) fetchPosts(); 
+
+      if (!response.ok) fetchPosts();
     } catch (error) {
       console.error("Error liking post:", error);
       fetchPosts();
@@ -161,7 +165,7 @@ export default function FeedPage() {
 
       if (response.ok) {
         setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-        fetchPosts(); 
+        fetchPosts();
       }
     } catch (error) {
       console.error("Error saving comment:", error);
@@ -192,15 +196,35 @@ export default function FeedPage() {
     }
   };
 
+  const handleShare = async (post) => {
+    const shareUrl = window.location.href;
+    const authorName = post.user?.name || 'a user';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'ObsidianNet',
+          text: `Check out this post by ${authorName} on ObsidianNet!`,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert("Link copied to clipboard! 📋");
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto mt-2 sm:mt-4 px-2 sm:px-4 pb-12">
-      
+
       {/* 🔍 Universal Search Bar UI */}
       <div className="relative mb-4 sm:mb-6 z-40" ref={searchRef}>
         <div className="relative flex items-center">
           <span className="absolute left-3 text-gray-500">🔍</span>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search ObsidianNet for people..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -216,8 +240,8 @@ export default function FeedPage() {
               <div className="p-4 text-center text-xs text-gray-400">Searching directory...</div>
             ) : searchResults.length > 0 ? (
               searchResults.map(result => (
-                <Link 
-                  key={result._id} 
+                <Link
+                  key={result._id}
                   to={`/profile/${result.username}`}
                   onClick={() => { setShowSearchDropdown(false); setSearchQuery(''); }}
                   className="flex items-center space-x-3 p-3 hover:bg-[#1a1e2d] transition-colors border-b border-[#1e2230]/50 last:border-0"
@@ -239,12 +263,12 @@ export default function FeedPage() {
       {/* ✍️ Post Creation Box */}
       <div className="bg-[#11131e] border border-[#1e2230] rounded-xl p-3 sm:p-4 shadow-lg mb-4 sm:mb-6">
         <div className="flex space-x-2 sm:space-x-4">
-          <img 
-            src={user?.profilePicture || PLACEHOLDER_AVATAR} 
-            alt="Current User" 
+          <img
+            src={user?.profilePicture || PLACEHOLDER_AVATAR}
+            alt="Current User"
             className="w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border border-[#1e2230] bg-gray-900 shadow-inner flex-shrink-0"
           />
-          
+
           <form onSubmit={handlePostSubmit} className="flex-1">
             <textarea
               value={postContent}
@@ -252,11 +276,11 @@ export default function FeedPage() {
               placeholder="What's on your mind? Share an insight..."
               className="w-full bg-[#090a0f] text-gray-200 placeholder-gray-500 border border-[#1e2230] rounded-lg p-2.5 sm:p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none min-h-[70px] sm:min-h-[90px] transition-all text-xs sm:text-sm"
             />
-            
+
             {imagePreview && (
               <div className="relative mt-2 sm:mt-3 rounded-lg overflow-hidden border border-[#1e2230] max-h-48 sm:max-h-60 bg-black flex items-center justify-center">
                 <img src={imagePreview} alt="Upload preview" className="object-contain max-h-48 sm:max-h-60 w-full" />
-                <button 
+                <button
                   type="button"
                   onClick={handleRemoveImage}
                   className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white text-xs p-1.5 rounded-full transition-colors backdrop-blur-sm"
@@ -265,25 +289,25 @@ export default function FeedPage() {
                 </button>
               </div>
             )}
-            
+
             <div className="flex justify-between items-center mt-3 sm:mt-4 pt-2 border-t border-[#1e2230]/50">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImageChange} 
-                className="hidden" 
-                accept="image/*" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                className="hidden"
+                accept="image/*"
               />
-              <button 
-                type="button" 
-                onClick={() => fileInputRef.current.click()} 
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
                 className="text-gray-400 hover:text-blue-400 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium transition-colors py-1 px-2 rounded-lg hover:bg-[#1c1f2e]"
               >
                 <span className="text-sm sm:text-base">🖼️</span> <span>Media</span>
               </button>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isPosting || (!postContent.trim() && !selectedImage)}
                 className="px-4 sm:px-6 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/40 disabled:text-gray-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all shadow-md flex items-center space-x-2"
               >
@@ -303,15 +327,15 @@ export default function FeedPage() {
 
           return (
             <div key={post._id} className="bg-[#11131e] border border-[#1e2230] rounded-xl p-4 sm:p-5 shadow-md text-left transition-all hover:border-[#252a3d]">
-              
+
               <div className="flex justify-between items-start mb-3 sm:mb-4">
-                <Link 
-                  to={`/profile/${post.user?.username}`} 
+                <Link
+                  to={`/profile/${post.user?.username}`}
                   className="flex items-center space-x-2.5 sm:space-x-3 group cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  <img 
-                    src={post.user?.profilePicture || PLACEHOLDER_AVATAR} 
-                    alt={post.user?.name} 
+                  <img
+                    src={post.user?.profilePicture || PLACEHOLDER_AVATAR}
+                    alt={post.user?.name}
                     className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-[#252a3d] bg-gray-800"
                   />
                   <div>
@@ -325,7 +349,7 @@ export default function FeedPage() {
                 </Link>
 
                 {isMyPost && (
-                  <button 
+                  <button
                     onClick={() => handleDeletePost(post._id)}
                     className="text-gray-500 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-500/10 flex items-center justify-center"
                     title="Delete Post"
@@ -338,20 +362,30 @@ export default function FeedPage() {
               </div>
 
               <p className="text-gray-300 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed mb-3 sm:mb-4">{post.text}</p>
-              
+
               {post.img && (
-                 <div className="rounded-lg overflow-hidden border border-[#1e2230] bg-[#090a0f] mb-3 sm:mb-4">
-                   <img src={post.img.startsWith('http') ? post.img : `${API_BASE_URL}${post.img}`} alt="Post media" className="w-full h-auto max-h-[300px] sm:max-h-[450px] object-contain mx-auto" />
-                 </div>
+                <div className="rounded-lg overflow-hidden border border-[#1e2230] bg-[#090a0f] mb-3 sm:mb-4">
+                  <img src={post.img.startsWith('http') ? post.img : `${API_BASE_URL}${post.img}`} alt="Post media" className="w-full h-auto max-h-[300px] sm:max-h-[450px] object-contain mx-auto" />
+                </div>
               )}
 
               <div className="flex space-x-4 sm:space-x-6 border-t border-[#1e2230] pt-2 sm:pt-3 text-gray-400 text-[11px] sm:text-xs font-semibold">
+
+                {/* LIKE BUTTON */}
                 <button onClick={() => handleLike(post._id)} className="hover:text-pink-500 transition-colors flex items-center space-x-1 sm:space-x-1.5 py-1 px-2 rounded-md hover:bg-[#1c1f2e]">
                   <span>❤️ {post.likes?.length || 0}</span> <span className="hidden sm:inline">Like</span>
                 </button>
+
+                {/* COMMENT BUTTON */}
                 <button onClick={() => setActiveCommentBox(activeCommentBox === post._id ? null : post._id)} className="hover:text-blue-400 transition-colors flex items-center space-x-1 sm:space-x-1.5 py-1 px-2 rounded-md hover:bg-[#1c1f2e]">
                   <span>💬 {post.comments?.length || 0}</span> <span className="hidden sm:inline">Comment</span>
                 </button>
+
+                {/* SHARE BUTTON */}
+                <button onClick={() => handleShare(post)} className="hover:text-emerald-400 transition-colors flex items-center space-x-1 sm:space-x-1.5 py-1 px-2 rounded-md hover:bg-[#1c1f2e]">
+                  <span>📤</span> <span className="hidden sm:inline">Share</span>
+                </button>
+
               </div>
 
               {activeCommentBox === post._id && (
@@ -379,15 +413,15 @@ export default function FeedPage() {
                   </div>
 
                   <div className="flex mt-2 sm:mt-3 space-x-2 pt-2 border-t border-[#1e2230]/40">
-                    <input 
-                      type="text" 
-                      value={commentInputs[post._id] || ''} 
-                      onChange={(e) => handleCommentInputChange(post._id, e.target.value)} 
-                      placeholder="Add a constructive comment..." 
+                    <input
+                      type="text"
+                      value={commentInputs[post._id] || ''}
+                      onChange={(e) => handleCommentInputChange(post._id, e.target.value)}
+                      placeholder="Add a constructive comment..."
                       className="flex-1 bg-[#11131e] text-white text-[11px] sm:text-xs rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus:outline-none border border-[#1e2230] focus:border-blue-500 transition-colors"
                     />
-                    <button 
-                      onClick={() => handleCommentSubmit(post._id)} 
+                    <button
+                      onClick={() => handleCommentSubmit(post._id)}
                       disabled={!commentInputs[post._id]?.trim()}
                       className="text-blue-500 hover:text-blue-400 disabled:text-gray-600 font-semibold text-[11px] sm:text-xs px-2 sm:px-3 transition-colors"
                     >
