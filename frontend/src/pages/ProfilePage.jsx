@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function ProfilePage() {
-  const { username } = useParams(); // Grabs the username from the URL bar (e.g., /profile/johndoe)
+  const { username } = useParams(); 
   const { user: currentUser } = useAuthStore();
   
   const [profileUser, setProfileUser] = useState(null);
@@ -29,7 +29,6 @@ export default function ProfilePage() {
         }
 
         const data = await response.json();
-        // 🚀 Set both the user metadata and their timeline posts array!
         setProfileUser(data.user);
         setPosts(data.posts);
       } catch (err) {
@@ -48,6 +47,9 @@ export default function ProfilePage() {
   if (isLoading) return <div className="text-white text-center mt-20 text-sm">Syncing profile directory...</div>;
   if (error) return <div className="text-red-400 text-center mt-20 text-sm">⚠️ {error}</div>;
   if (!profileUser) return <div className="text-gray-400 text-center mt-20 text-sm">No profile data available.</div>;
+
+  // 🚀 NEW: Check if the logged-in user owns this profile
+  const isOwnProfile = currentUser?.username === profileUser.username;
 
   return (
     <div className="w-full max-w-2xl mx-auto mt-4 px-2 sm:px-4 pb-12 text-left">
@@ -70,6 +72,15 @@ export default function ProfilePage() {
               className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#11131e] bg-gray-900 object-cover shadow-lg"
             />
           </div>
+
+          {/* 🚀 NEW: Edit Profile Button (Only shows for the profile owner) */}
+          {isOwnProfile && (
+            <div className="absolute top-3 right-4">
+              <button className="bg-[#1e2230] hover:bg-[#252a3d] text-gray-200 text-xs sm:text-sm font-semibold py-1.5 px-4 rounded-full border border-gray-600 transition-all shadow-sm flex items-center gap-2">
+                ⚙️ Edit Profile
+              </button>
+            </div>
+          )}
 
           <div className="pt-14 sm:pt-18 pl-2">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-100 tracking-wide">{profileUser.name}</h2>
