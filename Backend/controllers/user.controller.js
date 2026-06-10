@@ -9,7 +9,7 @@ const uploadToCloudinary = async (file, folder) => {
     return uploadResponse.secure_url;
 };
 
-// 🔍 NEW: Search users globally by name or username
+// 🔍 Search users globally by name or username
 export const searchUsers = async (req, res) => {
     try {
         const { query } = req.query;
@@ -31,7 +31,7 @@ export const searchUsers = async (req, res) => {
     }
 };
 
-// 👥 NEW: Get all mutual connected user object arrays
+// 👥 Get all mutual connected user object arrays
 export const getUserConnections = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
@@ -45,7 +45,7 @@ export const getUserConnections = async (req, res) => {
     }
 };
 
-// ⚡ UPDATED: Now filters out users you are already connected to!
+// ⚡ Filters out users you are already connected to!
 export const getSuggestedUsers = async (req, res) => {
     try {
         const currentUserId = req.user._id;
@@ -129,7 +129,8 @@ export const toggleConnection = async (req, res) => {
 
         if (!targetUser) return res.status(404).json({ message: "User not found" });
 
-        const isAlreadyConnected = myUser.connections.includes(targetUserId);
+        // 🚀 FIX: Use .some() and .toString() to evaluate Mongoose ObjectIds correctly against strings
+        const isAlreadyConnected = myUser.connections.some(id => id.toString() === targetUserId);
 
         if (isAlreadyConnected) {
             myUser.connections = myUser.connections.filter(id => id.toString() !== targetUserId);
