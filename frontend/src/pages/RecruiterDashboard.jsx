@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Users, FileText, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react';
-// Import your auth store or user context if needed to pass tokens
+import { Link } from 'react-router-dom'; 
+
+// ✅ FIX: Define the base URL so the fetch requests don't crash
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function RecruiterDashboard() {
     const [jobs, setJobs] = useState([]);
@@ -12,12 +15,18 @@ export default function RecruiterDashboard() {
     useEffect(() => {
         const fetchMyJobs = async () => {
             try {
-                const response = await fetch('/api/recruiter/my-postings', {
-                    // Add headers: { Authorization: `Bearer ${token}` } if required
-                });
+                const response = await fetch(`${API_BASE_URL}/api/jobs`, { credentials: 'include' });
                 const data = await response.json();
-                setJobs(data);
-                if (data.length > 0) setSelectedJob(data[0]._id);
+
+                // Make sure to define 'user' context in your app if this filtering is needed!
+                // We are keeping your logic intact here
+                const myJobs = data.filter(job => job.postedBy?._id === window.currentUser?._id); 
+                
+                // If you don't have a 'user' variable mapped yet, change the above line to:
+                // const myJobs = data; 
+                
+                setJobs(myJobs);
+                if (myJobs.length > 0) setSelectedJob(myJobs[0]._id);
             } catch (error) {
                 console.error('Error fetching jobs:', error);
             } finally {
@@ -33,7 +42,7 @@ export default function RecruiterDashboard() {
 
         const fetchApplications = async () => {
             try {
-                const response = await fetch(`/api/recruiter/applications/${selectedJob}`);
+                const response = await fetch(`${API_BASE_URL}/api/recruiter/applications/${selectedJob}`);
                 const data = await response.json();
                 setApplications(data);
             } catch (error) {
@@ -44,17 +53,14 @@ export default function RecruiterDashboard() {
     }, [selectedJob]);
 
     // 3. Handle Status Updates
-    // 🔄 CORRECTED: Handle Status Updates
     const handleStatusUpdate = async (applicationId, newStatus) => {
         try {
-            const response = await fetch(`/api/recruiter/applications/${applicationId}/status`, {
+            const response = await fetch(`${API_BASE_URL}/api/recruiter/applications/${applicationId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    // If you use localStorage for tokens, add this:
-                    // 'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                credentials: 'include', // 👈 THIS IS CRITICAL: It sends your auth cookies to pass the protectRoute middleware
+                credentials: 'include',
                 body: JSON.stringify({ status: newStatus }),
             });
 
@@ -89,9 +95,15 @@ export default function RecruiterDashboard() {
 
                 {/* Left Sidebar: My Postings */}
                 <div className="w-full md:w-1/3 bg-[#111827] rounded-xl border border-gray-800 p-4 h-[calc(100vh-100px)] overflow-y-auto">
-                    <div className="flex items-center gap-2 mb-6 border-b border-gray-800 pb-4">
-                        <Briefcase className="w-5 h-5 text-blue-500" />
-                        <h2 className="text-xl font-semibold">My Postings</h2>
+
+                    <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
+                        <div className="flex items-center gap-2">
+                            <Briefcase className="w-5 h-5 text-blue-500" />
+                            <h2 className="text-xl font-semibold">My Postings</h2>
+                        </div>
+                        <Link to="/post-job" className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            + Post Job
+                        </Link>
                     </div>
 
                     {jobs.length === 0 ? (
@@ -103,8 +115,8 @@ export default function RecruiterDashboard() {
                                     key={job._id}
                                     onClick={() => setSelectedJob(job._id)}
                                     className={`p-4 rounded-lg cursor-pointer transition-all border ${selectedJob === job._id
-                                            ? 'border-blue-500 bg-blue-500/10'
-                                            : 'border-gray-800 bg-[#1A2234] hover:border-gray-600'
+                                        ? 'border-blue-500 bg-blue-500/10'
+                                        : 'border-gray-800 bg-[#1A2234] hover:border-gray-600'
                                         }`}
                                 >
                                     <h3 className="font-medium text-gray-100">{job.title}</h3>

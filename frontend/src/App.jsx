@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore'; 
+
+// Page Imports
 import FeedPage from './pages/FeedPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import NetworkPage from './pages/NetworkPage';
-import Navbar from './components/Navbar'; 
 import JobsPage from './pages/JobsPage';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import MessagesPage from './pages/MessagesPage'; 
+import PostJobPage from './pages/PostJobPage';
+
+// Component Imports
+import Navbar from './components/Navbar'; 
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
@@ -42,17 +48,31 @@ export default function App() {
         
         <Navbar />
 
-        {/* ✅ FIXED: Removed justify-center which breaks scrolling on mobile, optimized container padding */}
         <main className="container mx-auto px-4 sm:px-6 flex flex-col items-center min-h-[calc(100vh-64px)] pt-24 pb-12 w-full max-w-full">
           <Routes>
+            {/* Standard User Routes */}
             <Route path="/" element={user ? <FeedPage /> : <Navigate to="/login" replace />} />
             <Route path="/network" element={user ? <NetworkPage /> : <Navigate to="/login" replace />} />
-            <Route path="/profile/:username" element={<ProfilePage />} />
+            <Route path="/profile/:username" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
+            <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />
+            <Route path="/messages" element={user ? <MessagesPage /> : <Navigate to="/login" replace />} />
+            
+            {/* ✅ STRICT RECRUITER ROUTES: Only accessible if user.role === 'recruiter' */}
+            <Route 
+                path="/recruiter/dashboard" 
+                element={user?.role === 'recruiter' ? <RecruiterDashboard /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+                path="/post-job" 
+                element={user?.role === 'recruiter' ? <PostJobPage /> : <Navigate to="/" replace />} 
+            />
+
+            {/* Authentication Access Points */}
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
             <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" replace />} />
-            <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />
+            
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
-            <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
           </Routes>
         </main>
 

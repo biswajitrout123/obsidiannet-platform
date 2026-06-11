@@ -82,35 +82,34 @@ export default function JobsPage() {
     }
   };
 
-  // Handle Recruiter Job Submission
-  const handleStatusUpdate = async (jobId, applicantId, newStatus) => {
-  try {
-    const response = await fetch(`http://localhost:5000/api/jobs/${jobId}/applicants/${applicantId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // 🔥 CRITICAL: Sends cookies across ports (5173 to 5000)
-      body: JSON.stringify({ status: newStatus }), // Sends 'Approved' or 'Rejected'
-    });
+  // 🎯 NEW: Added the missing function to handle Recruiter posting a new job
+  const handlePostJobSubmit = async (e) => {
+    e.preventDefault();
+    setIsPosting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newJob),
+        credentials: 'include'
+      });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to update application status.');
+      if (response.ok) {
+        alert("Job posted successfully!");
+        setShowPostModal(false);
+        setNewJob({ title: '', company: '', location: '', description: '', requirements: '' }); // Reset form
+        fetchJobs(); // Refresh the feed
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to post job.");
+      }
+    } catch (error) {
+      console.error("Posting error:", error);
+      alert("An error occurred while posting.");
+    } finally {
+      setIsPosting(false);
     }
-
-    // ✅ Success: Update your local state here so the UI changes instantly
-    alert(`Application successfully updated to ${newStatus}!`);
-    
-    // Example state update (adjust based on your actual state name):
-    // setApplicants(prev => prev.map(app => app._id === applicantId ? { ...app, status: newStatus } : app));
-
-  } catch (error) {
-    console.error("Error updating status:", error);
-    alert(`Action Denied: ${error.message}`);
-  }
-};
+  };
 
   // Recruiter: Approve or Reject Applicant
   const handleApplicantStatus = async (jobId, applicantId, status) => {
@@ -145,7 +144,7 @@ export default function JobsPage() {
         </div>
         
         {user?.role === 'recruiter' && (
-          <button onClick={() => setShowPostModal(true)} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full text-xs sm:text-sm shadow-md transition-all">
+          <button onClick={() => setShowPostModal(true)} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full text-xs sm:text-sm shadow-md transition-all cursor-pointer">
             + Post a Job
           </button>
         )}
@@ -172,15 +171,16 @@ export default function JobsPage() {
                 </div>
 
                 <div className="flex flex-col items-start md:items-end justify-between min-w-[160px]">
+                  {/* 🎯 NEW: Recruiter gets Manage button, Users get Apply button */}
                   {user?.role === 'recruiter' ? (
-                    <button onClick={() => setViewingApplicantsJob(job)} className="px-4 py-1.5 border border-blue-500/40 hover:bg-blue-600/10 text-blue-400 rounded-full text-xs font-semibold">
-                      👥 Applicants ({job.applicants?.length || 0})
+                    <button onClick={() => setViewingApplicantsJob(job)} className="px-4 py-1.5 border border-blue-500/40 hover:bg-blue-600/10 text-blue-400 rounded-full text-xs font-semibold cursor-pointer">
+                      👥 Manage ({job.applicants?.length || 0})
                     </button>
                   ) : (
                     <button 
                       onClick={() => !hasApplied && setApplyingJobId(job._id)}
                       disabled={hasApplied}
-                      className={`px-6 py-1.5 font-semibold rounded-full text-xs transition-all border ${
+                      className={`px-6 py-1.5 font-semibold rounded-full text-xs transition-all border cursor-pointer ${
                         hasApplied ? "bg-transparent border-[#1e2230] text-gray-500 cursor-not-allowed" : "bg-blue-600 border-blue-600 hover:bg-blue-700 text-white"
                       }`}
                     >
@@ -201,11 +201,11 @@ export default function JobsPage() {
             <h3 className="text-gray-100 font-bold text-lg mb-4">Submit Application</h3>
             <form onSubmit={submitApplication}>
               <label className="block text-[11px] font-semibold text-gray-500 mb-2">Upload Resume (PDF/Doc)</label>
-              <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600/20 file:text-blue-400 mb-4" />
+              <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600/20 file:text-blue-400 mb-4 cursor-pointer" />
               
               <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => setApplyingJobId(null)} className="px-4 py-1.5 text-gray-400 hover:bg-[#1c1f2e] rounded-md text-xs">Cancel</button>
-                <button type="submit" disabled={isSubmittingApp} className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold">
+                <button type="button" onClick={() => setApplyingJobId(null)} className="px-4 py-1.5 text-gray-400 hover:bg-[#1c1f2e] rounded-md text-xs cursor-pointer">Cancel</button>
+                <button type="submit" disabled={isSubmittingApp} className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold cursor-pointer">
                   {isSubmittingApp ? "Uploading..." : "Submit"}
                 </button>
               </div>
@@ -220,7 +220,7 @@ export default function JobsPage() {
           <div className="bg-[#11131e] border border-[#1e2230] w-full max-w-xl rounded-xl shadow-2xl p-6 relative">
             <div className="flex justify-between items-center border-b border-[#1e2230] pb-3 mb-4">
               <h3 className="text-gray-100 font-bold text-base">Applicants for {viewingApplicantsJob.title}</h3>
-              <button onClick={() => setViewingApplicantsJob(null)} className="text-gray-500 hover:text-gray-300 text-sm">✕ Close</button>
+              <button onClick={() => setViewingApplicantsJob(null)} className="text-gray-500 hover:text-gray-300 text-sm cursor-pointer">✕ Close</button>
             </div>
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
@@ -248,13 +248,13 @@ export default function JobsPage() {
                       </a>
                       <button 
                         onClick={() => handleApplicantStatus(viewingApplicantsJob._id, applicant.user._id, 'approved')}
-                        className="px-3 py-1 bg-green-600/20 hover:bg-green-600 text-green-400 hover:text-white border border-green-500/30 text-[11px] font-medium rounded-md transition-all"
+                        className="px-3 py-1 bg-green-600/20 hover:bg-green-600 text-green-400 hover:text-white border border-green-500/30 text-[11px] font-medium rounded-md transition-all cursor-pointer"
                       >
                         ✓ Approve
                       </button>
                       <button 
                         onClick={() => handleApplicantStatus(viewingApplicantsJob._id, applicant.user._id, 'rejected')}
-                        className="px-3 py-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-[11px] font-medium rounded-md transition-all"
+                        className="px-3 py-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 text-[11px] font-medium rounded-md transition-all cursor-pointer"
                       >
                         ✕ Reject
                       </button>
@@ -270,20 +270,21 @@ export default function JobsPage() {
         </div>
       )}
 
-      {/* 🟢 MODAL A: Create Job Listing Modal logic remains identical to your code... */}
+      {/* 🟢 MODAL A: Create Job Listing Modal */}
       {showPostModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           {/* ... Keep your existing Add Job Form UI here ... */}
            <div className="bg-[#11131e] border border-[#1e2230] w-full max-w-md rounded-xl p-6 relative">
             <h3 className="text-gray-100 font-bold text-lg mb-4">Post a New Role</h3>
             <form onSubmit={handlePostJobSubmit} className="space-y-3">
-              <input type="text" required value={newJob.title} onChange={e => setNewJob({...newJob, title: e.target.value})} placeholder="Job Title" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white" />
-              <input type="text" required value={newJob.company} onChange={e => setNewJob({...newJob, company: e.target.value})} placeholder="Company" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white" />
-              <input type="text" required value={newJob.location} onChange={e => setNewJob({...newJob, location: e.target.value})} placeholder="Location" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white" />
-              <textarea value={newJob.description} onChange={e => setNewJob({...newJob, description: e.target.value})} placeholder="Role Description" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white resize-none" rows="4" />
+              <input type="text" required value={newJob.title} onChange={e => setNewJob({...newJob, title: e.target.value})} placeholder="Job Title" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500" />
+              <input type="text" required value={newJob.company} onChange={e => setNewJob({...newJob, company: e.target.value})} placeholder="Company" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500" />
+              <input type="text" required value={newJob.location} onChange={e => setNewJob({...newJob, location: e.target.value})} placeholder="Location" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-blue-500" />
+              <textarea value={newJob.description} onChange={e => setNewJob({...newJob, description: e.target.value})} placeholder="Role Description" className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-2 text-xs text-white resize-none focus:outline-none focus:border-blue-500" rows="4" />
               <div className="flex justify-end space-x-2 mt-4">
-                <button type="button" onClick={() => setShowPostModal(false)} className="px-4 py-1.5 text-gray-400 text-xs">Cancel</button>
-                <button type="submit" disabled={isPosting} className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold">{isPosting ? "Posting..." : "Publish Job"}</button>
+                <button type="button" onClick={() => setShowPostModal(false)} className="px-4 py-1.5 text-gray-400 hover:text-white text-xs cursor-pointer transition-colors">Cancel</button>
+                <button type="submit" disabled={isPosting} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold cursor-pointer transition-colors">
+                  {isPosting ? "Posting..." : "Publish Job"}
+                </button>
               </div>
             </form>
           </div>

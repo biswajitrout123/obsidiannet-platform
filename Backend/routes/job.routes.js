@@ -10,8 +10,10 @@ router.get('/', protectRoute, getJobs);
 // Candidate Route: Only normal users can apply to jobs
 router.post('/:id/apply', protectRoute, authorizeRoles('user'), applyToJob);
 
-// Recruiter Routes: Only recruiters can post jobs and approve/reject applicants
-router.post('/create', protectRoute, authorizeRoles('recruiter'), createJob);
+// ✅ FIX: Changed '/create' to '/' to match the React frontend POST request
+router.post('/', protectRoute, authorizeRoles('recruiter'), createJob);
+
+// Recruiter Route: Approve/Reject applicants
 router.put('/:jobId/applicants/:applicantId/status', protectRoute, authorizeRoles('recruiter'), updateApplicantStatus);
 
 export default router;

@@ -89,7 +89,8 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link to="/" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Home</Link>
-                <Link Nitro to="/network" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">My Network</Link>
+                {/* Fixed the typo 'Nitro' that was right here: */}
+                <Link to="/network" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">My Network</Link>
                 <Link to="/jobs" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Jobs</Link>
                 
                 {/* 💼 Conditionally render Recruiter Portal link for mobile menu */}

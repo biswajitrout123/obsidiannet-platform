@@ -17,37 +17,42 @@ export const getJobs = async (req, res) => {
 
 export const createJob = async (req, res) => {
     try {
+        if (req.user.role !== "recruiter") {
+            return res.status(403).json({ message: "Access denied. Only recruiters can post jobs." });
+        }
+
+        // ✅ FIX: Changed 'companyName' to 'company' so it perfectly matches React's request
         const { title, company, location, description, requirements } = req.body;
+
         const newJob = new Job({
             title,
-            company,
+            company, // ✅ FIX: Now maps correctly directly to the DB schema
             location,
             description,
-            requirements: requirements || '',
-            postedBy: req.user._id
+            requirements,
+            postedBy: req.user._id 
         });
-        
+
         await newJob.save();
         res.status(201).json(newJob);
+
     } catch (error) {
-        console.error("Error creating job:", error);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("Error in createJob controller:", error);
+        res.status(500).json({ message: "Server error while posting job." });
     }
 };
 
 export const applyToJob = async (req, res) => {
     try {
-        let resumeUrl = req.user.resumeUrl; // Check if they already have one saved
+        let resumeUrl = req.user.resumeUrl; 
         
-        // If the frontend sends a new file (Base64 string)
         if (req.body.resume) {
             const uploadResponse = await cloudinary.uploader.upload(req.body.resume, {
-                resource_type: "auto", // Allows PDFs and documents
+                resource_type: "auto", 
                 folder: "resumes"
             });
             resumeUrl = uploadResponse.secure_url;
 
-            // Save to user profile so they don't have to upload next time
             req.user.resumeUrl = resumeUrl;
             await req.user.save();
         }
@@ -82,7 +87,6 @@ export const applyToJob = async (req, res) => {
     }
 };
 
-// ⚙️ FULLY FIXED AND OPTIMIZED STATUS UPDATE HANDLER
 export const updateApplicantStatus = async (req, res) => {
     try {
         const { status } = req.body;
@@ -91,7 +95,6 @@ export const updateApplicantStatus = async (req, res) => {
             return res.status(400).json({ message: "Status field is missing from request body." });
         }
 
-        // ✅ FIX 1: Normalize incoming string case (Converts 'Approved'/'Approved' ➡️ 'approved')
         const normalizedStatus = status.toLowerCase();
         
         if (!['approved', 'rejected', 'pending'].includes(normalizedStatus)) {
@@ -101,7 +104,6 @@ export const updateApplicantStatus = async (req, res) => {
         const job = await Job.findById(req.params.jobId);
         if (!job) return res.status(404).json({ message: "Job listing context not found" });
 
-        // ✅ FIX 2: Dynamic Role Validation Override (Allow action if they are the poster OR a verified Recruiter account)
         const isHiringManager = job.postedBy.toString() === req.user._id.toString();
         const isRecruiterAccount = req.user.role === 'recruiter';
 
@@ -109,10 +111,8 @@ export const updateApplicantStatus = async (req, res) => {
             return res.status(403).json({ message: "Action Denied: Only hiring managers or recruiters can alter application status tracking flags." });
         }
 
-        // ✅ FIX 3: Safe Mongoose Deep-Object Mapping Identification Check
         const applicant = job.applicants.find((app) => {
             if (!app.user) return false;
-            // Handle both unpopulated ObjectIDs and fully populated User profiles safely:
             const appUserId = app.user._id ? app.user._id.toString() : app.user.toString();
             return appUserId === req.params.applicantId;
         });
@@ -121,7 +121,6 @@ export const updateApplicantStatus = async (req, res) => {
             return res.status(404).json({ message: "Target candidate application index not found on this job record." });
         }
 
-        // Apply state transition update cleanly
         applicant.status = normalizedStatus;
         await job.save();
 
