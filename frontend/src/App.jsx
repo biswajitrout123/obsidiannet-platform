@@ -12,6 +12,7 @@ import JobsPage from './pages/JobsPage';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import MessagesPage from './pages/MessagesPage'; 
 import PostJobPage from './pages/PostJobPage';
+import ChatPage from './pages/ChatPage';
 
 // Component Imports
 import Navbar from './components/Navbar'; 
@@ -57,6 +58,9 @@ export default function App() {
             <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />
             <Route path="/messages" element={user ? <MessagesPage /> : <Navigate to="/login" replace />} />
             
+            {/* ✅ Live Real-Time Chat Route (Protected) */}
+            <Route path="/chat/:targetUserId" element={user ? <ChatPage /> : <Navigate to="/login" replace />} />
+
             {/* ✅ STRICT RECRUITER ROUTES: Only accessible if user.role === 'recruiter' */}
             <Route 
                 path="/recruiter/dashboard" 
@@ -71,7 +75,7 @@ export default function App() {
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
             <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" replace />} />
             
-            {/* Catch-all */}
+            {/* Catch-all Wildcard Route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

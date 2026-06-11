@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function ProfilePage() {
   const { username } = useParams(); 
+  const navigate = useNavigate(); // Added for chat routing
   const { user: currentUser } = useAuthStore();
   
   const [profileUser, setProfileUser] = useState(null);
@@ -11,15 +12,11 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🚀 Modal and Edit States
+  // Modal and Edit States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: '',
-    headline: '',
-    bio: '',
-    location: '',
-    skills: ''
+    name: '', headline: '', bio: '', location: '', skills: ''
   });
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [coverBannerFile, setCoverBannerFile] = useState(null);
@@ -57,7 +54,6 @@ export default function ProfilePage() {
     }
   }, [username]);
 
-  // Open modal and pre-fill form fields with database data
   const handleEditClick = () => {
     setEditForm({
       name: profileUser?.name || '',
@@ -69,7 +65,6 @@ export default function ProfilePage() {
     setIsModalOpen(true);
   };
 
-  // Submit profile edits to Render backend
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
@@ -85,7 +80,6 @@ export default function ProfilePage() {
       if (profilePicFile) formData.append('profilePicture', profilePicFile);
       if (coverBannerFile) formData.append('coverBanner', coverBannerFile);
 
-      // ⚠️ Note: Check if your user.routes.js is using .put or .post for updates!
       const response = await fetch(`${API_BASE_URL}/api/users/profile/update`, {
         method: 'PUT', 
         body: formData,
@@ -95,9 +89,9 @@ export default function ProfilePage() {
       if (!response.ok) throw new Error("Failed to synchronize profile modifications");
 
       const updatedUser = await response.json();
-      setProfileUser(updatedUser); // Dynamically update UI state without forcing page reload
+      setProfileUser(updatedUser); 
       setIsModalOpen(false);
-      window.location.reload(); // Refresh to update your global store avatar headers cleanly
+      window.location.reload(); 
     } catch (err) {
       console.error("Profile update error:", err);
       alert(err.message);
@@ -114,17 +108,13 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full max-w-2xl mx-auto mt-4 px-2 sm:px-4 pb-12 text-left relative">
-      
-      {/* 💳 Profile Header Card */}
       <div className="bg-[#11131e] border border-[#1e2230] rounded-xl overflow-hidden shadow-xl mb-6">
-        {/* Banner */}
         <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-b border-[#1e2230]/40 relative">
           {profileUser.coverBanner && (
             <img src={profileUser.coverBanner} alt="Banner" className="w-full h-full object-cover" />
           )}
         </div>
 
-        {/* Profile Picture & Main Details */}
         <div className="px-4 pb-6 pt-0 relative">
           <div className="absolute -top-12 sm:-top-16 left-4">
             <img 
@@ -134,17 +124,24 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* 🚀 Active Edit Profile Button */}
-          {isOwnProfile && (
-            <div className="absolute top-3 right-4">
+          <div className="absolute top-3 right-4 flex gap-2">
+            {isOwnProfile ? (
               <button 
                 onClick={handleEditClick}
                 className="bg-[#1e2230] hover:bg-[#252a3d] text-gray-200 text-xs sm:text-sm font-semibold py-1.5 px-4 rounded-full border border-gray-600 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
               >
                 ⚙️ Edit Profile
               </button>
-            </div>
-          )}
+            ) : (
+              // 🚀 NEW VISIBLE CHAT BUTTON FOR OTHER USERS
+              <button 
+                onClick={() => navigate(`/chat/${profileUser._id}`)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold py-1.5 px-4 rounded-full transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+              >
+                💬 Message
+              </button>
+            )}
+          </div>
 
           <div className="pt-14 sm:pt-18 pl-2">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-100 tracking-wide">{profileUser.name}</h2>
@@ -165,7 +162,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* About Section */}
         {profileUser.bio && (
           <div className="px-6 py-4 border-t border-[#1e2230]/50 bg-[#090a0f]/30">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">About</h3>
@@ -173,7 +169,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Skills Section */}
         {profileUser.skills && profileUser.skills.length > 0 && (
           <div className="px-6 py-4 border-t border-[#1e2230]/50">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Skills</h3>
@@ -188,7 +183,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* 📜 User's Activity / Posts Section */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2 border-b border-[#1e2230] pb-2 pl-1">
           {profileUser.name}'s Activity ({posts.length})
@@ -233,7 +227,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* 🎨 POPUP EDIT MODAL (Tailwind Dark Variant UI Overlay) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-[#11131e] border border-[#1e2230] rounded-xl max-w-lg w-full p-5 sm:p-6 text-left space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">

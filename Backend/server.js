@@ -13,17 +13,18 @@ import postRoutes from './routes/post.route.js';
 import userRoutes from './routes/user.routes.js';
 import jobRoutes from './routes/job.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import messageRoutes from './routes/message.routes.js';
 
-// ✅ IMPORTED SOCKET APP: Do not recreate 'app' with express() below
+// IMPORTED SOCKET APP
 import { app, server } from "./socket/socket.js";
 
 const PORT = process.env.PORT || 5000;
 
 // Global Middleware
 const allowedOrigins = [
-    'http://localhost:5173',                    // Local development frontend
-    'https://obsidiannet-platform.vercel.app',  // Your production Vercel deployment URL
-    process.env.CLIENT_URL                      // Fallback value from dashboard configuration
+    'http://localhost:5173',                    
+    'https://obsidiannet-platform.vercel.app',  
+    process.env.CLIENT_URL                      
 ].filter(Boolean); 
 
 app.use(cors({
@@ -59,6 +60,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/messages', messageRoutes); 
 
 // Database Connection & Server Startup
 const MONGO_URI = process.env.MONGO_URI;

@@ -3,8 +3,12 @@ import { getReceiverSocketId, io } from "../socket/socket.js";
 
 export const getMessages = async (req, res) => {
     try {
-        const { id: userToChatId } = req.params;
+        const { userToChatId } = req.params;
         const myId = req.user._id;
+
+        if (!userToChatId) {
+            return res.status(400).json({ error: "Target user ID is required" });
+        }
 
         const messages = await Message.find({
             $or: [
@@ -23,8 +27,13 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
     try {
         const { text } = req.body;
-        const { id: receiverId } = req.params;
         const senderId = req.user._id;
+        
+        const receiverId = req.params.id || req.params.userToChatId || req.body.receiverId;
+
+        if (!receiverId) {
+            return res.status(400).json({ error: "Receiver ID configuration missing" });
+        }
 
         const newMessage = new Message({
             senderId,
@@ -32,13 +41,13 @@ export const sendMessage = async (req, res) => {
             text,
         });
 
+        // 1. Save to database
         await newMessage.save();
 
-        // ⚡ REAL-TIME MAGIC HAPPENS HERE
+        // 2. Emit real-time message to receiver
         const receiverSocketId = getReceiverSocketId(receiverId);
         if (receiverSocketId) {
-            // io.to().emit() sends the event only to that specific user
-            io.to(receiverSocketId).emit("newMessage", newMessage);
+            io.to(receiverSocketId).emit("receiveMessage", newMessage);
         }
 
         res.status(201).json(newMessage);

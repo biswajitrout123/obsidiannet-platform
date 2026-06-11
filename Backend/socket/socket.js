@@ -5,37 +5,40 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-// 🚀 Initialize Socket.io with CORS settings for your React frontend
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173"], // Change this to your Vercel URL later
-        methods: ["GET", "POST"],
-    },
+        origin: [
+            'http://localhost:5173',
+            'https://obsidiannet-platform.vercel.app'
+        ],
+        methods: ['GET', 'POST']
+    }
 });
 
-// Store connected users to allow private 1-on-1 messaging
-// Format: { userId: socketId }
+// Object tracking online active users: { userId: socketId }
+const userSocketMap = {}; 
+
 export const getReceiverSocketId = (receiverId) => {
     return userSocketMap[receiverId];
 };
 
-const userSocketMap = {}; 
-
 io.on("connection", (socket) => {
-    console.log("A user connected", socket.id);
+    console.log("A user connected via WebSocket:", socket.id);
 
+    // Grab the logged-in user's ID passed from the frontend client connection
     const userId = socket.handshake.query.userId;
-    if (userId !== "undefined") {
+    if (userId && userId !== "undefined") {
         userSocketMap[userId] = socket.id;
     }
 
-    // Emit to all users who is online
+    // Broadcast list of currently online users to all clients
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-    // Handle disconnects
     socket.on("disconnect", () => {
-        console.log("User disconnected", socket.id);
-        delete userSocketMap[userId];
+        console.log("User disconnected from WebSocket:", socket.id);
+        if (userId) {
+            delete userSocketMap[userId];
+        }
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
 });
