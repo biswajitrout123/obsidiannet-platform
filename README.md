@@ -55,6 +55,7 @@ The messaging system is structured on a streamlined, relational-state architectu
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 }
+```
 
 
 👥 Team Members
