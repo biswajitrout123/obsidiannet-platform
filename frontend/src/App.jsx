@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore'; 
+import { io } from 'socket.io-client';
+import axios from 'axios';
 
 // Page Imports
 import FeedPage from './pages/FeedPage';
@@ -17,9 +19,12 @@ import ChatPage from './pages/ChatPage';
 // Component Imports
 import Navbar from './components/Navbar'; 
 
+const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000" : "YOUR_LIVE_BACKEND_URL_HERE";
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const { user, isCheckingAuth, checkAuth } = useAuthStore();
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false); // ✅ Global Notification State
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -34,6 +39,33 @@ export default function App() {
     checkAuth();
   }, [checkAuth]);
 
+  // ✅ NEW: Global Notification Listener
+  useEffect(() => {
+    if (!user || !user._id) return;
+
+    // 1. Fetch initial unread status from Database on load
+    const fetchUnreadStatus = async () => {
+        try {
+            const res = await axios.get(`${BASE_URL}/api/messages/unread`, { withCredentials: true });
+            setHasUnreadMessages(res.data.hasUnread);
+        } catch (error) {
+            console.error("Could not fetch unread status", error);
+        }
+    };
+    fetchUnreadStatus();
+
+    // 2. Listen globally for incoming messages to turn red dot ON
+    const socket = io(BASE_URL, { query: { userId: user._id } });
+
+    socket.on("receiveMessage", (incomingMessage) => {
+        setHasUnreadMessages(true);
+    });
+
+    return () => {
+        socket.disconnect();
+    };
+  }, [user]);
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-[#090a0f] flex flex-col items-center justify-center">
@@ -47,21 +79,18 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-[#090a0f] text-[#f3f4f6] transition-colors duration-200 overflow-x-hidden">
         
-        <Navbar />
+        {/* ✅ Passed Notification State to Navbar */}
+        <Navbar hasUnreadMessages={hasUnreadMessages} setHasUnreadMessages={setHasUnreadMessages} />
 
         <main className="container mx-auto px-4 sm:px-6 flex flex-col items-center min-h-[calc(100vh-64px)] pt-24 pb-12 w-full max-w-full">
           <Routes>
-            {/* Standard User Routes */}
             <Route path="/" element={user ? <FeedPage /> : <Navigate to="/login" replace />} />
             <Route path="/network" element={user ? <NetworkPage /> : <Navigate to="/login" replace />} />
             <Route path="/profile/:username" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
             <Route path="/jobs" element={user ? <JobsPage /> : <Navigate to="/login" replace />} />
             <Route path="/messages" element={user ? <MessagesPage /> : <Navigate to="/login" replace />} />
-            
-            {/* ✅ Live Real-Time Chat Route (Protected) */}
             <Route path="/chat/:targetUserId" element={user ? <ChatPage /> : <Navigate to="/login" replace />} />
 
-            {/* ✅ STRICT RECRUITER ROUTES: Only accessible if user.role === 'recruiter' */}
             <Route 
                 path="/recruiter/dashboard" 
                 element={user?.role === 'recruiter' ? <RecruiterDashboard /> : <Navigate to="/" replace />} 
@@ -71,15 +100,12 @@ export default function App() {
                 element={user?.role === 'recruiter' ? <PostJobPage /> : <Navigate to="/" replace />} 
             />
 
-            {/* Authentication Access Points */}
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" replace />} />
             <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" replace />} />
             
-            {/* Catch-all Wildcard Route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-
       </div>
     </Router>
   );

@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore'; 
 
-export default function Navbar() {
+export default function Navbar({ hasUnreadMessages, setHasUnreadMessages }) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false); // ✅ Mobile menu state
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // ✅ Logout confirmation modal state
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); 
 
   const handleLogoutClick = async () => {
     await logout();
-    setIsOpen(false); // Close menu on logout
-    setIsLogoutModalOpen(false); // Close confirmation modal
+    setIsOpen(false); 
+    setIsLogoutModalOpen(false); 
     navigate('/login');
   };
 
@@ -22,14 +22,13 @@ export default function Navbar() {
       <nav className="w-full bg-[#11131e] border-b border-[#1e2230] fixed top-0 left-0 right-0 z-50 shadow-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           
-          {/* Brand Platform Logo */}
           <div className="flex items-center">
             <Link to="/" onClick={closeMenu} className="text-xl font-bold tracking-wider text-blue-500 hover:text-blue-400 transition-colors">
               ObsidianNet
             </Link>
           </div>
 
-          {/* 💻 DESKTOP NAVIGATION (Hidden on Mobile) */}
+          {/* 💻 DESKTOP NAVIGATION */}
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
             {user ? (
               <>
@@ -37,7 +36,18 @@ export default function Navbar() {
                 <Link to="/network" className="hover:text-gray-200 transition-colors py-1">My Network</Link>
                 <Link to="/jobs" className="hover:text-gray-200 transition-colors py-1">Jobs</Link>
                 
-                {/* 💼 Conditionally render Recruiter Portal link for desktop */}
+                {/* ✅ NEW: Messages Link with Red Dot */}
+                <Link 
+                    to="/messages" 
+                    onClick={() => setHasUnreadMessages(false)} 
+                    className="relative hover:text-gray-200 transition-colors py-1"
+                >
+                    Messages
+                    {hasUnreadMessages && (
+                        <span className="absolute -top-0 -right-2.5 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse"></span>
+                    )}
+                </Link>
+
                 {user?.role === 'recruiter' && (
                   <Link 
                     to="/recruiter/dashboard" 
@@ -89,11 +99,21 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link to="/" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Home</Link>
-                {/* Fixed the typo 'Nitro' that was right here: */}
                 <Link to="/network" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">My Network</Link>
                 <Link to="/jobs" onClick={closeMenu} className="text-gray-300 hover:text-white text-base font-medium">Jobs</Link>
                 
-                {/* 💼 Conditionally render Recruiter Portal link for mobile menu */}
+                {/* ✅ NEW: Mobile Messages Link with Red Dot */}
+                <Link 
+                    to="/messages" 
+                    onClick={() => { setHasUnreadMessages(false); closeMenu(); }} 
+                    className="flex items-center text-gray-300 hover:text-white text-base font-medium"
+                >
+                    Messages
+                    {hasUnreadMessages && (
+                        <span className="ml-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse"></span>
+                    )}
+                </Link>
+
                 {user?.role === 'recruiter' && (
                   <Link 
                     to="/recruiter/dashboard" 

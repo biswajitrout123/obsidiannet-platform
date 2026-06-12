@@ -16,6 +16,10 @@ const messageSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        isRead: {
+            type: Boolean,
+            default: false, // Tracks if the message has been opened
+        }
     },
     { timestamps: true }
 );
